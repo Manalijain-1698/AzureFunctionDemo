@@ -131,6 +131,27 @@ namespace FunctionApp1
         }
 
 
+        [FunctionName("Function")]
+        public static void Run([TimerTrigger("*/5 * * * * *")] TimerInfo myTimer, ILogger log)
+        {
+            log.LogInformation($"Timer trigger executed at: {DateTime.Now}");
+
+            var text = string.Empty;
+
+            for (int i = 0; i < 4000; i++)
+            {
+                text = text + "-" + DateTime.Now;
+            }
+
+            if (text.Length < 10)
+            {
+                log.LogInformation($"dummy text");
+            }
+
+            log.LogInformation($"Function processed message with length: {text.Length}");
+        }
+
+
 
 
     }
