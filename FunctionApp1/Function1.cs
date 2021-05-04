@@ -25,11 +25,19 @@ namespace FunctionApp1
         
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = Route)]HttpRequest req, ILogger log)
         {
-            
-            log.LogInformation("get todos method invoked");
-            Items.Add(new Todo { Id = "1", CreatedTime = DateTime.Now, TaskDescription = "Speech Recognition", IsCompleted = true });
-
+            try
+            {
+                log.LogInformation("get todos method invoked");
+                Items.Add(new Todo { Id = "1", CreatedTime = DateTime.Now, TaskDescription = "Speech Recognition", IsCompleted = true });
+                return new OkObjectResult(Items);
+            }
+            catch (Exception e)
+            {
+                log.LogError(e.Message, e);
+            }
             return new OkObjectResult(Items);
+
+
         }
 
         [FunctionName("GetTodosById")]
@@ -39,9 +47,19 @@ namespace FunctionApp1
         {
 
             var todo = Items.FirstOrDefault(t => t.Id == id);
-            if (todo == null)
+            try
             {
-                return new NotFoundResult();
+                
+                if (todo == null)
+                {
+                    return new NotFoundResult();
+                }
+                return new OkObjectResult(todo);
+            }
+            catch (Exception e)
+            {
+
+                log.LogError(e.Message, e);
             }
             return new OkObjectResult(todo);
         }
@@ -51,13 +69,23 @@ namespace FunctionApp1
         public static async Task<IActionResult> CreateTodo(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = Route)] HttpRequest req, ILogger log)
         {
-            log.LogInformation("Creating a new todo list item");
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var input = JsonConvert.DeserializeObject<TodoCreateModel>(requestBody);
-
             var todo = new Todo() { TaskDescription = input.TaskDescription };
-            Items.Add(todo);
+            try
+            {
+                log.LogInformation("Creating a new todo list item");
+                Items.Add(todo);
+                return new OkObjectResult(todo);
+            }
+            catch (Exception e)
+            {
+
+                log.LogError(e.Message, e);
+            }
             return new OkObjectResult(todo);
+
+
         }
 
         [FunctionName("UpdateTodo")]
@@ -90,7 +118,15 @@ namespace FunctionApp1
             {
                 return new NotFoundResult();
             }
-            Items.Remove(todo);
+            try
+            {
+                Items.Remove(todo);
+                return new OkResult();
+            }
+            catch(Exception e)
+            {
+                log.LogError(e.Message, e);
+            }
             return new OkResult();
         }
 
