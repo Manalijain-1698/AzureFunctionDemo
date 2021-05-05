@@ -218,5 +218,14 @@ namespace FunctionApp1
         }
 
 
+        //Queue trigger
+        [FunctionName("AddingMsgToQueue")]
+        public static void AddingMsgToQueue(
+            [QueueTrigger("mynewqueue",Connection = "AzureWebJobsStorage")] string mynewQueue, ILogger log,string Id)
+        {
+            log.LogInformation($"C# queue trigger function processed:{mynewQueue}\n Id:{Id}");
+
+        }
+
     }
 }
