@@ -10,6 +10,8 @@ using Newtonsoft.Json;
 using FunctionApp1.Models;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Azure.WebJobs.Extensions.Storage;
+using System.Text;
 
 namespace FunctionApp1
 {
@@ -19,16 +21,42 @@ namespace FunctionApp1
         private static readonly List<Todo> Items = new List<Todo>();
 
         private const string Route = "memorytodo";
+        
+        //Http Trigger with Queue storage
+        [FunctionName("GetName")]
+        public static async Task<IActionResult> Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            [Queue("outputqueue"), StorageAccount("AzureWebJobsStorage")] ICollector<string> msg,
+            ILogger log)
+        {
+            log.LogInformation("C# HTTP trigger function processed a request.");
 
+            string name = req.Query["name"];
+
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            dynamic data = JsonConvert.DeserializeObject(requestBody);
+            name = name ?? data?.name;
+            msg.Add($"Name passed is:{name}");
+            string responseMessage = string.IsNullOrEmpty(name)
+                ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
+                : $"Hello, {name}. This HTTP triggered function executed successfully.";
+
+            return new OkObjectResult(responseMessage);
+        }
+
+
+        //HttpTrigger of type "GET"
         [FunctionName("GetTodos")]
         public static IActionResult GetTodos(
         
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = Route)]HttpRequest req, ILogger log)
+
         {
             try
             {
                 log.LogInformation("get todos method invoked");
                 Items.Add(new Todo { Id = "1", CreatedTime = DateTime.Now, TaskDescription = "Speech Recognition", IsCompleted = true });
+               
                 return new OkObjectResult(Items);
             }
             catch (Exception e)
@@ -39,6 +67,7 @@ namespace FunctionApp1
 
 
         }
+        //HttpTrigger of type "GET BY ID"
 
         [FunctionName("GetTodosById")]
         public static IActionResult GetTodosById(
@@ -64,14 +93,15 @@ namespace FunctionApp1
             return new OkObjectResult(todo);
         }
 
+        //HttpTrigger of type "POST"
 
         [FunctionName("CreateTodo")]
         public static async Task<IActionResult> CreateTodo(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = Route)] HttpRequest req, ILogger log)
         {
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var input = JsonConvert.DeserializeObject<TodoCreateModel>(requestBody);
-            var todo = new Todo() { TaskDescription = input.TaskDescription };
+            var input = JsonConvert.DeserializeObject<Todo>(requestBody);
+            var todo = new Todo() { Id = input.Id, CreatedTime = input.CreatedTime, TaskDescription = input.TaskDescription, IsCompleted = input.IsCompleted };
             try
             {
                 log.LogInformation("Creating a new todo list item");
@@ -87,6 +117,8 @@ namespace FunctionApp1
 
 
         }
+
+        //HttpTrigger of type "PUT"
 
         [FunctionName("UpdateTodo")]
         public static async Task<IActionResult> UpdateTodo (
@@ -108,6 +140,7 @@ namespace FunctionApp1
             return new OkObjectResult(todo);
         }
 
+        //HttpTrigger of type "DELETE"
 
         [FunctionName("DeleteTodo")]
         public static IActionResult DeleteTodo(
@@ -130,9 +163,10 @@ namespace FunctionApp1
             return new OkResult();
         }
 
+        //Time Trigger 
 
-        [FunctionName("Function")]
-        public static void Run([TimerTrigger("*/5 * * * * *")] TimerInfo myTimer, ILogger log)
+        [FunctionName("TimeTriggerFunction")]
+        public static void TimeTriggerFunction([TimerTrigger("*/5 * * * * *")] TimerInfo myTimer, ILogger log)
         {
             log.LogInformation($"Timer trigger executed at: {DateTime.Now}");
 
@@ -151,7 +185,37 @@ namespace FunctionApp1
             log.LogInformation($"Function processed message with length: {text.Length}");
         }
 
+        //Blob Trigger with Azure Function
+        [FunctionName("BlobFunction")]
+        public static void BlobFunction([BlobTrigger("dev/{filename}", Connection = "AzureWebJobsStorage")] Stream myblob,string filename, ILogger log,string blobTrigger)
+        {
+            StreamReader sm = new StreamReader(myblob);
+            log.LogInformation($"c# blob trigger function processed blob \n File Name:{filename} \n Size:{myblob.Length} Bytes \n Content:{sm.ReadToEnd()} \n Path:{blobTrigger} ");
 
+        }
+
+
+        //Blob Input Binding with Azure Function
+        [FunctionName("BlobInputBinding")]
+
+        public static void BlobInputBinding([QueueTrigger("myqueueitems",Connection = "AzureWebJobsStorage")] string myqueueItem,
+            [Blob("dev/{queueTrigger}",FileAccess.Read,Connection = "AzureWebJobsStorage")] Stream s, ILogger log)
+        {
+            StreamReader sm = new StreamReader(s);
+            log.LogInformation($" \n File Name:{myqueueItem} \n Size:{s.Length} Bytes \n Content:{sm.ReadToEnd()}  ");
+
+        }
+
+        //Blob Output Binding with Azure Function
+        [FunctionName("BlobOutputBinding")]
+
+        public static void BlobOutputBinding([QueueTrigger("myqueueitems", Connection = "AzureWebJobsStorage")] string myqueueItem,
+            [Blob("dev/abc.txt", FileAccess.Write, Connection = "AzureWebJobsStorage")] Stream outblob, ILogger log)
+        {
+            log.LogInformation($"c# Queue trigger function processed:{myqueueItem}");
+            outblob.Write(Encoding.ASCII.GetBytes(myqueueItem));
+
+        }
 
 
     }
