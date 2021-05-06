@@ -18,10 +18,12 @@ namespace FunctionApp1
 
     public static class Function1
     {
-        private static readonly List<Todo> Items = new List<Todo>();
-
-        private const string Route = "memorytodo";
         
+        private const string Route = "memorytodo";
+
+        static List<Todo> Items = Todo.GetList();
+
+
         //Http Trigger with Queue storage
         [FunctionName("GetName")]
         public static async Task<IActionResult> Run(
@@ -44,7 +46,7 @@ namespace FunctionApp1
             return new OkObjectResult(responseMessage);
         }
 
-
+        
         //HttpTrigger of type "GET"
         [FunctionName("GetTodos")]
         public static IActionResult GetTodos(
@@ -52,11 +54,10 @@ namespace FunctionApp1
             [HttpTrigger(AuthorizationLevel.Function, "get", Route = Route)]HttpRequest req, ILogger log)
 
         {
+
             try
             {
                 log.LogInformation("get todos method invoked");
-                Items.Add(new Todo { Id = "1", CreatedTime = DateTime.Now, TaskDescription = "Speech Recognition", IsCompleted = true });
-               
                 return new OkObjectResult(Items);
             }
             catch (Exception e)
@@ -186,6 +187,7 @@ namespace FunctionApp1
         }
 
         //Blob Trigger with Azure Function
+        //We add txt file by selecting and put in dev folder
         [FunctionName("BlobFunction")]
         public static void BlobFunction([BlobTrigger("dev/{filename}", Connection = "AzureWebJobsStorage")] Stream myblob,string filename, ILogger log,string blobTrigger)
         {
@@ -196,6 +198,7 @@ namespace FunctionApp1
 
 
         //Blob Input Binding with Azure Function
+        //Type txt file in queue and check whether data is printed in console or not.
         [FunctionName("BlobInputBinding")]
 
         public static void BlobInputBinding([QueueTrigger("myqueueitems",Connection = "AzureWebJobsStorage")] string myqueueItem,
@@ -207,6 +210,7 @@ namespace FunctionApp1
         }
 
         //Blob Output Binding with Azure Function
+        // Write msg in myqueueitems and that is reflected back in blob.
         [FunctionName("BlobOutputBinding")]
 
         public static void BlobOutputBinding([QueueTrigger("myqueueitems", Connection = "AzureWebJobsStorage")] string myqueueItem,
@@ -219,6 +223,7 @@ namespace FunctionApp1
 
 
         //Queue trigger
+        //adding msg in new queue
         [FunctionName("AddingMsgToQueue")]
         public static void AddingMsgToQueue(
             [QueueTrigger("mynewqueue",Connection = "AzureWebJobsStorage")] string mynewQueue, ILogger log,string Id)
@@ -228,4 +233,6 @@ namespace FunctionApp1
         }
 
     }
+
+
 }
