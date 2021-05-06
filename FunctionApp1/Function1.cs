@@ -191,9 +191,16 @@ namespace FunctionApp1
         [FunctionName("BlobFunction")]
         public static void BlobFunction([BlobTrigger("dev/{filename}", Connection = "AzureWebJobsStorage")] Stream myblob,string filename, ILogger log,string blobTrigger)
         {
-            StreamReader sm = new StreamReader(myblob);
-            log.LogInformation($"c# blob trigger function processed blob \n File Name:{filename} \n Size:{myblob.Length} Bytes \n Content:{sm.ReadToEnd()} \n Path:{blobTrigger} ");
+            try
+            {
+                StreamReader sm = new StreamReader(myblob);
+                log.LogInformation($"c# blob trigger function processed blob \n File Name:{filename} \n Size:{myblob.Length} Bytes \n Content:{sm.ReadToEnd()} \n Path:{blobTrigger} ");
+            }
+            catch(Exception e)
+            {
+                log.LogError("Error:", e.Message);
 
+            }
         }
 
 
@@ -204,8 +211,17 @@ namespace FunctionApp1
         public static void BlobInputBinding([QueueTrigger("myqueueitems",Connection = "AzureWebJobsStorage")] string myqueueItem,
             [Blob("dev/{queueTrigger}",FileAccess.Read,Connection = "AzureWebJobsStorage")] Stream s, ILogger log)
         {
-            StreamReader sm = new StreamReader(s);
-            log.LogInformation($" \n File Name:{myqueueItem} \n Size:{s.Length} Bytes \n Content:{sm.ReadToEnd()}  ");
+            try
+            {
+                StreamReader sm = new StreamReader(s);
+                log.LogInformation($" \n File Name:{myqueueItem} \n Size:{s.Length} Bytes \n Content:{sm.ReadToEnd()}  ");
+            }
+            catch (Exception e)
+            {
+                log.LogError("Error:", e.Message);
+                
+            }
+            
 
         }
 
@@ -216,8 +232,16 @@ namespace FunctionApp1
         public static void BlobOutputBinding([QueueTrigger("myqueueitems", Connection = "AzureWebJobsStorage")] string myqueueItem,
             [Blob("dev/abc.txt", FileAccess.Write, Connection = "AzureWebJobsStorage")] Stream outblob, ILogger log)
         {
-            log.LogInformation($"c# Queue trigger function processed:{myqueueItem}");
-            outblob.Write(Encoding.ASCII.GetBytes(myqueueItem));
+            try
+            {
+                log.LogInformation($"c# Queue trigger function processed:{myqueueItem}");
+                outblob.Write(Encoding.ASCII.GetBytes(myqueueItem));
+            }
+            catch (Exception e)
+            {
+                log.LogError("Error:", e.Message);
+            }
+
 
         }
 
@@ -228,7 +252,15 @@ namespace FunctionApp1
         public static void AddingMsgToQueue(
             [QueueTrigger("mynewqueue",Connection = "AzureWebJobsStorage")] string mynewQueue, ILogger log,string Id)
         {
-            log.LogInformation($"C# queue trigger function processed:{mynewQueue}\n Id:{Id}");
+            try
+            {
+                log.LogInformation($"C# queue trigger function processed:{mynewQueue}\n Id:{Id}");
+
+            }
+            catch (Exception e)
+            {
+                log.LogError("Error:", e.Message);
+            }
 
         }
 
